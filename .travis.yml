@@ -1,0 +1,16 @@
+language: python
+python:
+- 3.8
+- 3.7
+install: pip install -U tox-travis
+script: tox
+deploy:
+  provider: pypi
+  distributions: sdist bdist_wheel
+  user: linhd-postdata
+  password:
+    secure: UzM9RBv37giLkZQFHF4ToHX+ywLBqK3kj7d40jvjkGbE02rNmJ2iBcId9qvYPRy9xm2UahEeIK3zCmMY5Z7v+W1bYoqSxXrRkrU0ZzSohZY5Edlk7TPvF45mev4IP4bArqBXMLGxSgpueZlANUYVtnCDmMN/Im+yVBHm54sL295/LvTX7/Dmjv2yOJRQarcMoLi8bA4zp+yszyno0H6X4CtuFST4koGXRwa2sifdhbF6JVBAn3I0Ok23S2H57+DsdImTdffSddfzLMZqvlrAiSU36+JfHqUNLeNxt1ZVIapb9Ymyk8o/KqoN/xuuS3xn6K1VfZ2ALCesZm8vOI/OrobtEiDKB4TJ28xj7xPd1juHrhxI5NOCBf0EyDbW3rdpCeN23uno9iphZg3cMbRIjtRzSBSTs8ylaxb4BBwabCK48zXzF7z5aNaWAJwIbA2OOPZaGPYCJHx6QJpL6Qssor6CmZtgpN1MqIsQaQ8OD59guM94Cq2S2DUC3bQCkpjtrKy2y+q8erxmlnkszOJ1zmGUEunExas40lKsCJB3+vbLArOSrPwET3z2wk5EuIVPQpWpP+qbKQEx05umjr1uSqv+DkxpSsPAErwbVmOXKT/4Nf1SGZuZoyk9UhsmaAqHzbY1ph7KqMkJ+RVypmCxRBI5p+CxAjJOEEXQRjvFXTs=
+  on:
+    tags: true
+    repo: linhd-postdata/horace
+    python: 3.8
