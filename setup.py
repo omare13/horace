@@ -1,19 +1,23 @@
 #!/usr/bin/env python
-
 """The setup script."""
-
+import io
+import re
+from os.path import dirname
+from os.path import join
 from setuptools import setup, find_packages
 
-with open('README.rst') as readme_file:
-    readme = readme_file.read()
 
-with open('HISTORY.rst') as history_file:
-    history = history_file.read()
+def read(*names, **kwargs):
+    with io.open(
+        join(dirname(__file__), *names),
+        encoding=kwargs.get('encoding', 'utf8')
+    ) as fh:
+        return fh.read()
 
-requirements = [ ]
-
+readme = read('README.rst')
+history = read('HISTORY.rst')
+requirements = read('requirements.txt').split("\n")
 setup_requirements = ['pytest-runner', ]
-
 test_requirements = ['pytest>=3', ]
 
 setup(
@@ -34,7 +38,10 @@ setup(
     description="Format converter from PoetryLab JSON to POSTDATA semantic formats",
     install_requires=requirements,
     license="Apache Software License 2.0",
-    long_description=readme + '\n\n' + history,
+    long_description='%s\n%s' % (
+        re.compile('^.. start-badges.*^.. end-badges', re.M | re.S).sub('', readme),
+        re.sub(':[a-z]+:`~?(.*?)`', r'``\1``', history)
+    ),
     include_package_data=True,
     keywords='horace',
     name='horace',
