@@ -2,9 +2,9 @@
 """The setup script."""
 import io
 import re
-from os.path import dirname
-from os.path import join
-from setuptools import setup, find_packages
+from os.path import dirname, join
+
+from setuptools import find_packages, setup
 
 
 def read(*names, **kwargs):

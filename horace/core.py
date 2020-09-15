@@ -1,42 +1,22 @@
 """Core module."""
-import io
-import uuid
-from typing import List
 
-from owlready2 import get_ontology
-from owlready2 import Ontology
+from owlready2 import Ontology, get_ontology
 from rdflib import Graph
+from slugify import slugify
+
+from horace.utils import ONTOLOGIES, RESOURCES_IRI, onto_to_graph
 
 
-ONTOLOGY_URL_TEMPLATE = ("https://raw.githubusercontent.com/linhd-postdata/"
-                         "{onto}-ontology/master/postdata-{onto}.owl")
-ONTOLOGIES = {
-    "core":       ONTOLOGY_URL_TEMPLATE.format(onto="core"),
-    "structural": ONTOLOGY_URL_TEMPLATE.format(onto="structuralElements"),
-    "prosodic":   ONTOLOGY_URL_TEMPLATE.format(onto="prosodicElements"),
-    "literary":   ONTOLOGY_URL_TEMPLATE.format(onto="literaryAnalysis"),
-}
-
-
-def get_scansion_graph(scansion: dict) -> Graph:
-    """Transform a scansion dictionary into a compliant LOD graph.
-    :param scansion: Dictionary with a Rantanplan-like scansion analysis
-    :return: RDFLib Graph with the individuals from scansion
+def get_averell_core_graph(source: str, poem: dict) -> Graph:
+    """Transform an Averell poem dictionary into a compliant LOD graph.
+    :param source: str with corpus source name
+    :param poem: Dictionary with a Averell-like poem data
+    :return: RDFLib Graph with the individuals from poem
     """
-    structural_onto = get_ontology(ONTOLOGIES["structural"]).load()
-    onto = add_structural_individuals(scansion, structural_onto)
-    return onto_to_graph(onto)
-
-
-def onto_to_graph(onto: Ontology) -> Graph:
-    """Convert an OWLReady2 ontology graph to RDFLib.
-    :param onto: OWLReady2 ontology
-    :return: RDFLib Graph
-    """
-    with io.BytesIO() as file:
-        onto.save(file=file, format="rdfxml", filter=filter_individuals)
-        rdf = file.getvalue().decode("utf8")
-        return Graph().parse(data=rdf)
+    core_onto = get_ontology(ONTOLOGIES["core"]).load()
+    onto = add_core_individuals(source, poem, core_onto)
+    classes = [onto.PoeticWork, onto.Redaction, onto.CreatorRole]
+    return onto_to_graph(onto, classes)
 
 
 def filter_individuals(graph: Graph, s: int, *args) -> bool:
@@ -47,64 +27,27 @@ def filter_individuals(graph: Graph, s: int, *args) -> bool:
     :return: Boolean deciding whether the instance specified by its storeid
              should be returned or not
     """
-    classes = [graph.onto.Line, graph.onto.Word, graph.onto.Syllable]
+    classes = [graph.onto.PoeticWork, graph.onto.Redaction,
+               graph.onto.CreatorRole]
     return s >= 0 and any(isinstance(graph.onto.world._get_by_storid(s), cls)
                           for cls in classes)
 
 
-def add_structural_individuals(scansion: dict, onto: Ontology) -> Ontology:
-    """Transform a Rantanplan scansion dictionary into an OWLReady ontology.
+def add_core_individuals(source: str, poem: dict, onto: Ontology) -> Ontology:
+    """Transform an Averell poem dictionary into an OWLReady ontology.
     This function performs all changes directly on onto.
-    :param scansion: Dictionary with a Rantanplan-like scansion analysis
+    :param source: str with corpus source name
+    :param poem: Dictionary with an Averell-like poem data
     :param onto: OWLReady2 ontology
     :return: The modified ontology onto
     """
-    for line in scansion:
-        if "tokens" not in line:
-            continue
-        o_line = onto.Line(
-            f"{onto.Line.name}/{uuid.uuid4()}",
-            content=[join_tokens(line["tokens"])],
-        )
-        o_line.has_words = []
-        for token in line["tokens"]:
-            o_word = onto.Word(
-                f"{onto.Word.name}/{uuid.uuid4()}",
-                content=[join_syllables(token)],
-                belongsToLine=[o_line],
-            )
-            o_word.has_syllables = []
-            if "word" not in token:
-                continue
-            for syllable in token["word"]:
-                o_syllable = onto.Syllable(
-                    f"{onto.Syllable.name}/{uuid.uuid4()}",
-                    content=[syllable["syllable"]],
-                    belongsToWord=[o_word],
-                )
-                o_word.has_syllables += [o_syllable]
-            o_line.has_words += [o_word]
+    poem_title = poem["poem_title"]
+    author = poem["author"]
+    slug_title = slugify(poem_title, separator='_')
+    slug_author = slugify(author)
+    o_poetic_work = onto.PoeticWork(iri=f"{RESOURCES_IRI}PW_{slug_title}")
+    o_redaction = onto.Redaction(iri=f"{RESOURCES_IRI}R_{slug_title}_{source}")
+    o_creator_role = onto.CreatorRole(iri=f"{RESOURCES_IRI}CR_{slug_author}")
+    o_poetic_work.isRealisedThrough = [o_redaction]
+    o_redaction.hasCreator = [o_creator_role]
     return onto
-
-
-def join_tokens(tokens: List[str]) -> str:
-    """Join all words from a list of tokens into a string.
-    :param tokens: List of dictionaries representing tokens
-    :return: String of words
-    """
-    output = []
-    for token in tokens:
-        item = join_syllables(token)
-        output.append(item)
-    return " ".join(output)
-
-
-def join_syllables(token: List[dict]) -> str:
-    """Join all symbols and syllables from a list of tokens into a string."
-    :param tokens: List of dictionaries representing tokens
-    :return: String of syllables
-    """
-    if "symbol" in token:
-        return token["symbol"]
-    else:
-        return "".join([syll["syllable"] for syll in token["word"]])

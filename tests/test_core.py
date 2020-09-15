@@ -1,19 +1,15 @@
 #!/usr/bin/env python
 """Tests for `horace` package."""
 
-import pytest
 from unittest import mock
 
+import pytest
 from owlready2 import get_ontology
 from rdflib import Graph
 
-from horace.core import add_structural_individuals
-from horace.core import get_scansion_graph
-from horace.core import filter_individuals
-from horace.core import join_syllables
-from horace.core import join_tokens
-from horace.core import onto_to_graph
-from horace.core import ONTOLOGIES
+from horace.utils import ONTOLOGIES, filter_individuals, onto_to_graph
+from horace.structural import (add_structural_individuals, get_scansion_graph,
+                               join_syllables, join_tokens)
 
 
 @pytest.fixture(scope='module')
@@ -21,36 +17,36 @@ def tokens():
     return [{
         'stress_position': -1,
         'word': [{
-                'is_stressed': False,
-                'syllable': 'Ja'
-            }, {
-                'is_stressed': True,
-                'is_word_end': True,
-                'syllable': 'más'
-            }]
+            'is_stressed': False,
+            'syllable': 'Ja'
         }, {
+            'is_stressed': True,
+            'is_word_end': True,
+            'syllable': 'más'
+        }]
+    }, {
         'symbol': ","
-        }, {
+    }, {
         'stress_position': -1,
         'word': [{
-                'is_stressed': False,
-                'syllable': 'en'
-            }, {
-                'is_stressed': False,
-                'syllable': 'con'
-            }, {
-                'is_stressed': False,
-                'syllable': 'tra'
-            }, {
-                'is_stressed': True,
-                'is_word_end': True,
-                'syllable': 'ré'
+            'is_stressed': False,
+            'syllable': 'en'
+        }, {
+            'is_stressed': False,
+            'syllable': 'con'
+        }, {
+            'is_stressed': False,
+            'syllable': 'tra'
+        }, {
+            'is_stressed': True,
+            'is_word_end': True,
+            'syllable': 'ré'
         }]
     }]
 
 
 def test_onto_to_graph():
-    with mock.patch("horace.core.filter_individuals",
+    with mock.patch("horace.utils.filter_individuals",
                     side_effect=None):
         # Code cannot be used for testing since the host it is usually down
         onto = get_ontology(ONTOLOGIES["structural"]).load()
@@ -67,7 +63,6 @@ def test_get_scansion_graph(snapshot, tokens):
 
 
 def test_add_structural_individuals(tokens):
-
     class Onto:
         def __init__(self):
             self.Line = mock.MagicMock()
@@ -94,14 +89,14 @@ def test_join_tokens(snapshot, tokens):
 def test_join_syllables(snapshot):
     token = {
         'word': [{
-                'is_stressed': False,
-                'syllable': 'Ja'
-            }, {
-                'is_stressed': True,
-                'is_word_end': True,
-                'syllable': 'más'
-            }]
-        }
+            'is_stressed': False,
+            'syllable': 'Ja'
+        }, {
+            'is_stressed': True,
+            'is_word_end': True,
+            'syllable': 'más'
+        }]
+    }
     output = join_syllables(token)
     snapshot.assert_match(output)
 
